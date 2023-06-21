@@ -78,13 +78,8 @@ class WaypointWidget: public QWidget {
 
     // getter
     void getPose(Ogre::Vector3& position, Ogre::Quaternion& quaternion);
-    double getDefaultHeight(); // might be remove
     QString getFrameId();
     QString getOutputTopic();
-
-    // save and load waypoint to / from file
-    void save(const std::string& filename);
-    void load(const std::string& filename);
 
     protected:
     Ui::PluginWidget* ui_;

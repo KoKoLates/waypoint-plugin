@@ -228,11 +228,42 @@ void WaypointWidget::poseChange(double value) {
 }
 
 void WaypointWidget::frameChange() {
+    boost::mutex::scoped_lock lock(frame_updates_mutex_);
+    QString new_frame = ui_->frame_input->text();
 
+    // Only take action if the frame has changed.
+    if ((new_frame != frame_id_)  && (new_frame != "")) {
+        frame_id_ = new_frame;
+        ROS_INFO("new frame: %s", frame_id_.toStdString().c_str());
+
+        // update the frames for all interactive markers
+        std::map<int, Ogre::SceneNode *>::iterator node_itr;
+        for (node_itr = map_ptr_->begin(); node_itr != map_ptr_->end(); node_itr++) {
+        std::stringstream waypoint_name;
+        waypoint_name << "waypoint" << node_itr->first;
+        std::string waypoint_name_str(waypoint_name.str());
+
+        visualization_msgs::InteractiveMarker int_marker;
+        if(server_->get(waypoint_name_str, int_marker)) {
+            int_marker.header.frame_id = new_frame.toStdString();
+            server_->setPose(waypoint_name_str, int_marker.pose, int_marker.header);
+        }
+    }
+    server_->applyChanges();
+  }
 }
 
 void WaypointWidget::topicChange() {
+    QString new_topic = ui_->topic_input->text();
 
+  // Only take action if the name has changed.
+  if(new_topic != output_topic_) {
+    path_publisher_.shutdown();
+    output_topic_ = new_topic;
+    if((output_topic_ != "") && (output_topic_ != "/")) {
+      path_publisher_ = handler_.advertise<nav_msgs::Path>(output_topic_.toStdString(), 1);
+    }
+  }
 }
 
 /**
@@ -316,6 +347,129 @@ void WaypointWidget::loadBag(const std::string& filename) {
         waypoint_tool_->makeItem(position, quaternion);
     }
   }
+}
+
+/**
+ * @brief Set the Pose object
+ * 
+ * @param position 
+ * @param quaternion 
+ */
+void setPose(const Ogre::Vector3& position, const Ogre::Quaternion& quaternion) {
+    ui_->x_spinbox->block(true);
+    ui_->y_spinbox->block(true);
+    ui_->z_spinbox->block(true);
+    ui_->yaw_spinbox->block(true);
+
+    ui_->x_spinbox->setValue(position.x);
+    ui_->y_spinbox->setValue(position.y);
+    ui_->z_spinbox->setValue(position.z);
+
+    tf::Quaternion qt(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+    ui_->yaw_spinbox->setValue(tf::getYaw(qt));
+
+    ui_->x_spinbox->blockSignals(false);
+    ui_->y_spinbox->blockSignals(false);
+    ui_->z_spinbox->blockSignals(false);
+    ui_->yaw_spinbox->blockSignals(false);
+}
+
+/**
+ * @brief Set the Config object
+ * 
+ * @param topic 
+ * @param frame 
+ * @param height 
+ */
+void setConfig(QString topic, QString frame) {
+    boost::mutex::scoped_lock lock(frame_updates_mutex_);
+    ui_->topic_input->blockSignal(true);
+    ui_->frame_input->blockSignal(true);
+
+    ui_->topic_input->setText(topic);
+    ui_->frame_input->setText(frame);
+
+    ui_->topic_input->blockSignal(false);
+    ui_->frame_ipnut->blockSignal(false);
+
+    topicChange();
+    frameChange();
+}
+
+/**
+ * @brief Set the Waypoint Label object
+ * 
+ * @param position 
+ */
+void setWaypointLabel(Ogre::Vector3 position) {
+    std::ostringstream string_stream;
+    string_stream.precision(2);
+    string_stream << selected_marker_name_;
+    std::string label = string_stream.str();
+    ui_->text_selected->setText(QString::fromStdString(label));
+}
+
+/**
+ * @brief Set the Waypoint Count object
+ * 
+ * @param size 
+ */
+void setWaypointCount(int size) {
+    std::ostringstream string_stream;
+    string_stream << "Total waypoints: " << size;
+    boost::mutex::scoped_lock lock(frame_updates_mutex_);
+    ui_->text_total->setText(
+        QString::fromStdString(string_stream.str())
+    );
+}
+
+/**
+ * @brief Set the Selected Marker Name object
+ * 
+ * @param name 
+ */
+void setSelectedMarkerName(std::string name) {
+    selected_marker_name_ = name;
+}
+
+/**
+ * @brief Get the Pose object
+ * 
+ * @param position 
+ * @param quaternion 
+ */
+void getPose(Ogre::Vector3& position, Ogre::Quaternion& quaternion) {
+    boost::mutex::scoped_lock lock(frame_updates_mutex_);
+    position.x = ui_->x_spinbox->value();
+    position.y = ui_->y_spinbox->value();
+    position.z = ui_->z_spinbox->value();
+    double yaw = ui_->yaw_spinbox->value();
+
+    tf::Quaternion qt = tf::createQuaternionFromYaw(yaw);
+    quaternion.x = qt.x();
+    quaternion.y = qt.y();
+    quaternion.z = qt.z();
+    quaternion.w = qt.w();
+}
+
+/**
+ * @brief Get the Frame Id object
+ * 
+ * @return QString 
+ */
+QString getFrameId() {
+    boost::mutex::scoped_lock lock(frame_updates_mutex_);
+    return frame_id_;
+}
+
+/**
+ * @brief Get the Output Topic object
+ * 
+ * @return QString 
+ */
+QString getOutputTopic() {
+    boost::mutex::scoped_lock lock(frame_updates_mutex_);
+    return output_topic_;
 }
 
 }
