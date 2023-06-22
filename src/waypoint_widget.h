@@ -71,7 +71,7 @@ class WaypointWidget: public QWidget {
     
     // setter
     void setPose(const Ogre::Vector3& position, const Ogre::Quaternion& quaternion);
-    void setConfig(QString topic, QString frame, float height);
+    void setConfig(QString topic, QString frame);
     void setWaypointLabel(Ogre::Vector3 position);
     void setWaypointCount(int size);
     void setSelectedMarkerName(std::string name);

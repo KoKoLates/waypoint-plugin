@@ -65,7 +65,7 @@ class WaypointTool: public rviz::Tool {
     interactive_markers::MenuHandler menu_handler_;
 
     // stores waypoints based on unique name
-    typeof std::map<int, Ogre::SceneNode*> str2nodeptr;
+    typedef std::map<int, Ogre::SceneNode*> str2nodeptr;
     str2nodeptr node_map_;
 
     // index
