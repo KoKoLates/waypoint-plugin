@@ -43,18 +43,18 @@ class WaypointTool: public rviz::Tool {
     virtual void initialize();
     virtual int processMouseEvent(rviz::ViewportMouseEvent& event);
 
-    virtual void load(const rviz::Config&);
-    virtual void save(rviz::Config const);
-
     void makeItem(const Ogre::Vector3&, const Ogre::Quaternion&);
+
+    virtual void load(const rviz::Config&);
+    virtual void save(rviz::Config) const;
 
     private:
     void getMarkerPose();
     void clearAllMarker();
     void processFeedBack(const visualization_msgs::InteractiveMarkerFeedbackConstPtr&);
 
-    Ogre::SceneNode* move_flag_node_;
-    std::string flag_resource_;
+    Ogre::SceneNode* move_axis_node_;
+    std::string axis_resource_;
 
     // waypoint plugin Qt widget
     WaypointWidget* widget_;
