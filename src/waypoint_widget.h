@@ -1,6 +1,6 @@
 /**
  * @file waypoint_widget.h
- * @author your name (you@domain.com)
+ * @author KoKoLates (the21515@gmail.com)
  * @brief 
  * @version 0.1
  * @date 2023-06-17
