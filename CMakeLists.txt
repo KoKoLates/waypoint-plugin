@@ -163,14 +163,14 @@ endif()
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Plugin Source
-set(SOURCE_FILES
+set(SOURCE_FILE 
   src/waypoint_widget.cpp
   src/waypoint_tool.cpp
   ${MOC_FILES}
 )
 
 set(LIB_NAME waypoint_plugin)
-add_library(${LIB_NAME} ${SOURCE_FILES} ${UIC_FILES})
+add_library(${LIB_NAME} ${SOURCE_FILE} ${UIC_FILES})
 target_link_libraries(${LIB_NAME}
   ${catkin_LIBRARIES} ${QT_LIBRARIES}
 )
@@ -221,6 +221,9 @@ install(TARGETS ${LIB_NAME}
 install(FILES
   plugin_description.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+install(DIRECTORY media/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/media)
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
