@@ -9,19 +9,20 @@
  * 
  */
 
-# include <rosbag/bag.h>
-# include <rosbag/view.h>
-# include <rviz/display_context.h>
-# include <interactive_markers/interactive_marker_server.h>
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <tf/tf.h>
+#include <QFileDialog>
+#include <boost/foreach.hpp>
+#include <rviz/display_context.h>
+#include <interactive_markers/interactive_marker_server.h>
 
-# include "waypoint_tool.h"
-# include <tf/tf.h>
-# include <QFileDialog>
-# include <boost/foreach.hpp>
-# define foreach BOOST_FOREACH
+#include "waypoint_tool.h"
 
-# include <OGRE/OgreSceneNode.h>
-# include <OGRE/OgreSceneManager.h>
+#define foreach BOOST_FOREACH
+
+#include <OGRE/OgreSceneNode.h>
+#include <OGRE/OgreSceneManager.h>
 
 namespace waypoint_plugin {
 
@@ -29,21 +30,18 @@ struct MissionKeywords {
     inline static const std::string KPosition = "position";
 };
 
-WaypointWidget::WaypointWidget (
-    rviz::DisplayContext* context, 
-    std::map<int, Ogre::SceneNode* >* map_ptr, 
-    interactive_markers::InteractiveMarkerServer* server, 
-    int* unique_idx, 
-    QWidget* parent, 
-    WaypointTool* waypoint_tool): QWidget(parent), 
-    context_(context), 
-    ui_(new Ui::PluginWidget()), 
-    map_ptr_(map_ptr_), 
-    unique_idx_(unique_idx), 
-    server_(server), 
-    frame_id_("map"), 
-    waypoint_tool_(waypoint_tool), 
-    selected_marker_name_(std::string(waypoint_name_prefix) + "1") 
+WaypointWidget::WaypointWidget (rviz::DisplayContext* context, std::map<int, Ogre::SceneNode* >* map_ptr,
+                                interactive_markers::InteractiveMarkerServer* server, int* unique_idx, 
+                                QWidget* parent, WaypointTool* waypoint_tool)
+    : QWidget(parent)
+    , context_(context) 
+    , ui_(new Ui::PluginWidget()) 
+    , map_ptr_(map_ptr_)
+    , unique_idx_(unique_idx) 
+    , server_(server)
+    , frame_id_("map") 
+    , waypoint_tool_(waypoint_tool) 
+    , selected_marker_name_(std::string(waypoint_name_prefix) + "1") 
 {        
     scene_manager_ = context_->getSceneManager();
     ui_->setupUi(this);
@@ -80,10 +78,6 @@ void WaypointWidget::disable() {
     hide();
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointWidget::saveHandler() {
     // saving the waypoint that have been setup
     QString filename = QFileDialog::getSaveFileName(
@@ -107,10 +101,6 @@ void WaypointWidget::saveHandler() {
     // [TODO] the yaml and json save
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointWidget::loadHandler() {
     const QString filename = QFileDialog::getOpenFileName(
         0, tr("Waypoint load"), "~/", 
@@ -130,10 +120,6 @@ void WaypointWidget::loadHandler() {
     }
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointWidget::clearHandler() {
     // clear scene node
     std::map<int, Ogre::SceneNode*>::iterator node_itr;
@@ -149,10 +135,6 @@ void WaypointWidget::clearHandler() {
     server_->applyChanges();
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointWidget::publishHandler() {
     nav_msgs::Path path;
     std::map<int, Ogre::SceneNode*>::iterator node_itr;
@@ -179,11 +161,6 @@ void WaypointWidget::publishHandler() {
     path_publisher_.publish(path);
 }
 
-/**
- * @brief 
- * 
- * @param value 
- */
 void WaypointWidget::poseChange(double value) {
     auto node_entry = map_ptr_->end();
     try {
@@ -266,11 +243,6 @@ void WaypointWidget::topicChange() {
   }
 }
 
-/**
- * @brief 
- * 
- * @param filename 
- */
 void WaypointWidget::saveBag(const std::string& filename) {
     rosbag::Bag bag;
     try {
@@ -307,11 +279,6 @@ void WaypointWidget::saveBag(const std::string& filename) {
     bag.close();
 }
 
-/**
- * @brief 
- * 
- * @param filename 
- */
 void WaypointWidget::loadBag(const std::string& filename) {
     rosbag::Bag bag;
     try {
@@ -349,12 +316,6 @@ void WaypointWidget::loadBag(const std::string& filename) {
   }
 }
 
-/**
- * @brief Set the Pose object
- * 
- * @param position 
- * @param quaternion 
- */
 void WaypointWidget::setPose(const Ogre::Vector3& position, const Ogre::Quaternion& quaternion) {
     ui_->x_spinbox->blockSignals(true);
     ui_->y_spinbox->blockSignals(true);
@@ -374,13 +335,6 @@ void WaypointWidget::setPose(const Ogre::Vector3& position, const Ogre::Quaterni
     ui_->yaw_spinbox->blockSignals(false);
 }
 
-/**
- * @brief Set the Config object
- * 
- * @param topic 
- * @param frame 
- * @param height 
- */
 void WaypointWidget::setConfig(QString topic, QString frame) {
     boost::mutex::scoped_lock lock(frame_updates_mutex_);
     ui_->topic_input->blockSignals(true);
@@ -396,11 +350,6 @@ void WaypointWidget::setConfig(QString topic, QString frame) {
     frameChange();
 }
 
-/**
- * @brief Set the Waypoint Label object
- * 
- * @param position 
- */
 void WaypointWidget::setWaypointLabel(Ogre::Vector3 position) {
     std::ostringstream string_stream;
     string_stream.precision(2);
@@ -409,11 +358,6 @@ void WaypointWidget::setWaypointLabel(Ogre::Vector3 position) {
     ui_->text_selected->setText(QString::fromStdString(label));
 }
 
-/**
- * @brief Set the Waypoint Count object
- * 
- * @param size 
- */
 void WaypointWidget::setWaypointCount(int size) {
     std::ostringstream string_stream;
     string_stream << "Total waypoints: " << size;
@@ -423,21 +367,10 @@ void WaypointWidget::setWaypointCount(int size) {
     );
 }
 
-/**
- * @brief Set the Selected Marker Name object
- * 
- * @param name 
- */
 void WaypointWidget::setSelectedMarkerName(std::string name) {
     selected_marker_name_ = name;
 }
 
-/**
- * @brief Get the Pose object
- * 
- * @param position 
- * @param quaternion 
- */
 void WaypointWidget::getPose(Ogre::Vector3& position, Ogre::Quaternion& quaternion) {
     boost::mutex::scoped_lock lock(frame_updates_mutex_);
     position.x = ui_->x_spinbox->value();
@@ -452,21 +385,11 @@ void WaypointWidget::getPose(Ogre::Vector3& position, Ogre::Quaternion& quaterni
     quaternion.w = qt.w();
 }
 
-/**
- * @brief Get the Frame Id object
- * 
- * @return QString 
- */
 QString WaypointWidget::getFrameId() {
     boost::mutex::scoped_lock lock(frame_updates_mutex_);
     return frame_id_;
 }
 
-/**
- * @brief Get the Output Topic object
- * 
- * @return QString 
- */
 QString WaypointWidget::getOutputTopic() {
     boost::mutex::scoped_lock lock(frame_updates_mutex_);
     return output_topic_;

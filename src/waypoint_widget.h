@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef RVIZ_PLUGIN_WAYPOINT_WIDGET
-#define RVIZ_PLUGIN_WAYPOINT_WIDGET
+#ifndef RVIZ_PLUGIN_WAYPOINT_WIDGET_
+#define RVIZ_PLUGIN_WAYPOINT_WIDGET_
 
 #ifndef Q_MOC_RUN
 #include <boost/thread/mutex.hpp>
@@ -44,20 +44,19 @@ namespace Ui {
 } // namespace Ui
 
 namespace waypoint_plugin {
-    constexpr char waypoint_name_prefix[] = "waypoint#";
     class WaypointTool;
+} // namespace waypoint_plugin
 
+namespace waypoint_plugin {
+    constexpr char waypoint_name_prefix[] = "waypoint_#";
     class WaypointWidget: public QWidget {
         friend class WaypointTool;
         Q_OBJECT
 
-        public: 
-        WaypointWidget (
-            rviz::DisplayContext*, 
-            std::map<int, Ogre::SceneNode*>*, 
-            interactive_markers::InteractiveMarkerServer*, 
-            int*, QWidget*, WaypointTool*
-        );
+    public: 
+        WaypointWidget(rviz::DisplayContext* context, std::map<int, Ogre::SceneNode*>* map_ptr, 
+                       interactive_markers::InteractiveMarkerServer* server, int* unique_idx, 
+                       QWidget* parant = 0, WaypointTool* waypoint_tool = 0);
         ~WaypointWidget();
 
         void enable();
@@ -67,19 +66,19 @@ namespace waypoint_plugin {
         void setPose(const Ogre::Vector3&, const Ogre::Quaternion&);
         void setConfig(QString, QString);
         void setWaypointLabel(Ogre::Vector3);
-        void setWaypointCount(int);
-        void setSelectedMarkerName(std::string);
+        void setWaypointCount(int size);
+        void setSelectedMarkerName(std::string name);
 
         // getter
         void getPose(Ogre::Vector3&, Ogre::Quaternion&);
         QString getFrameId();
         QString getOutputTopic();
 
-        protected:
+    protected:
         Ui::PluginWidget* ui_;
         rviz::DisplayContext* context_;
 
-        private:
+    private:
         ros::NodeHandle handler_;
         ros::Publisher path_publisher_;
 
@@ -107,7 +106,7 @@ namespace waypoint_plugin {
         // void loadYaml(const std::string& filename);
         // void loadJson(const std::string& filename);
 
-        private Q_SLOTS:
+    private Q_SLOTS:
         void saveHandler();
         void loadHandler();
         void clearHandler();
@@ -118,4 +117,4 @@ namespace waypoint_plugin {
     };
 }
 
-#endif // RVIZ_PLUGIN_WAYPOINT_WIDGET
+#endif // RVIZ_PLUGIN_WAYPOINT_WIDGET_

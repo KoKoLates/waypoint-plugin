@@ -11,30 +11,24 @@
 
 #include "waypoint_tool.h"
 
-# include <ros/console.h>
-# include <rviz/geometry.h>
-# include <rviz/mesh_loader.h>
-# include <rviz/validate_floats.h>
-# include <rviz/viewport_mouse_event.h>
-# include <rviz/visualization_manager.h>
-# include <rviz/window_manager_interface.h>
-# include <rviz/properties/vector_property.h>
+#include <ros/console.h>
+#include <rviz/geometry.h>
+#include <rviz/mesh_loader.h>
+#include <rviz/validate_floats.h>
+#include <rviz/viewport_mouse_event.h>
+#include <rviz/visualization_manager.h>
+#include <rviz/window_manager_interface.h>
+#include <rviz/properties/vector_property.h>
 
-# include <geometry_msgs/PoseStamped.h>
-
-# include <OGRE/OgreEntity.h>
-# include <OGRE/OgreSceneNode.h>
-# include <OGRE/OgreSceneManager.h>
+#include <OGRE/OgreEntity.h>
+#include <OGRE/OgreSceneNode.h>
+#include <OGRE/OgreSceneManager.h>
+#include <geometry_msgs/PoseStamped.h>
 
 namespace waypoint_plugin {
 
-WaypointTool::WaypointTool(): 
-move_axis_node_(NULL), 
-widget_dock_(NULL), 
-widget_(NULL), 
-server_("waypoint_plugin", "", false), 
-unique_idx_(0)
-{
+WaypointTool::WaypointTool(): move_axis_node_(NULL), widget_dock_(NULL), 
+    widget_(NULL), server_("waypoint_plugin", "", false), unique_idx_(0) {
     shortcut_key_ = '1';
 }
 
@@ -48,14 +42,14 @@ WaypointTool::~WaypointTool() {
 }
 
 void WaypointTool::initialize() {
-    axis_resource_ = "package://waypoint_plugin/media/axis.dae";
+    axis_resource_ = "package://waypoint-plugin/media/axis.dae";
 
     if (rviz::loadMeshFromResource(axis_resource_).isNull()) {
         ROS_ERROR("Waypoint Tool: failed to load model resource '%s'.", axis_resource_.c_str());
         return;
     }
 
-    move_axis_node_ = scene_manager_->getRootSceneNode() -> createChildSceneNode();
+    move_axis_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode();
     Ogre::Entity* entity = scene_manager_->createEntity(axis_resource_);
     move_axis_node_->attachObject(entity);
     move_axis_node_->setVisible(false);
@@ -73,32 +67,18 @@ void WaypointTool::initialize() {
     menu_handler_.insert("set manual", boost::bind(&WaypointTool::processFeedBack, this, _1));
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointTool::activate() {
     if (move_axis_node_) {
         move_axis_node_->setVisible(true);
     }
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointTool::deactivate() {
     if (move_axis_node_) {
         move_axis_node_->setVisible(false);
     }
 }
 
-/**
- * @brief 
- * 
- * @param event 
- * @return int 
- */
 int WaypointTool::processMouseEvent(rviz::ViewportMouseEvent& event) {
     if (!move_axis_node_) {
         return Render;
@@ -155,12 +135,6 @@ int WaypointTool::processMouseEvent(rviz::ViewportMouseEvent& event) {
     return Render;
 }
 
-/**
- * @brief 
- * 
- * @param position 
- * @param quaternion 
- */
 void WaypointTool::makeItem(const Ogre::Vector3& position, const Ogre::Quaternion& quaternion) {
     unique_idx_++;
 
@@ -252,11 +226,6 @@ void WaypointTool::makeItem(const Ogre::Vector3& position, const Ogre::Quaternio
     server_.applyChanges();
 }
 
-/**
- * @brief 
- * 
- * @param feedback 
- */
 void WaypointTool::processFeedBack(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
     switch (feedback -> event_type) {
         case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT:
@@ -341,10 +310,6 @@ void WaypointTool::processFeedBack(const visualization_msgs::InteractiveMarkerFe
     }
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointTool::getMarkerPose() {
     str2nodeptr::iterator node_itr;
     for (node_itr = node_map_.begin(); node_itr != node_map_.end(); node_itr++) {
@@ -363,10 +328,6 @@ void WaypointTool::getMarkerPose() {
     }
 }
 
-/**
- * @brief 
- * 
- */
 void WaypointTool::clearAllMarker() {
     str2nodeptr::iterator node_itr;
     for (node_itr = node_map_.begin(); node_itr != node_map_.end(); node_itr++) {
@@ -376,11 +337,6 @@ void WaypointTool::clearAllMarker() {
     unique_idx_ = 0;
 }
 
-/**
- * @brief 
- * 
- * @param config 
- */
 void WaypointTool::save(rviz::Config config) const {
     config.mapSetValue("Class", getClassId());
     rviz::Config waypoint_config = config.mapMakeChild("WaypointTool");
@@ -389,11 +345,6 @@ void WaypointTool::save(rviz::Config config) const {
     waypoint_config.mapSetValue("frame_id", widget_->getFrameId());
 }
 
-/**
- * @brief 
- * 
- * @param config 
- */
 void WaypointTool::load(const rviz::Config& config) {
     rviz::Config waypoint_config = config.mapGetChild("WaypointTool");
     QString topic, frame;
