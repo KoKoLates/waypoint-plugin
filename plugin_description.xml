@@ -1,9 +1,9 @@
 <library path="lib/libwaypoint_plugin">
-  <class name="waypoint_plugin/waypoint_widget"
+  <class name="waypoint_plugin/waypoint_tool"
          type="waypoint_plugin::WaypointTool"
          base_class_type="rviz::Tool">
     <description>
-    The plugin tool for waypoint setup in ros rviz.
+      The plugin tool for waypoint setup in ros rviz.
     </description>
   </class>
 </library>

@@ -14,26 +14,96 @@
    <string>Quadrotor Steering</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="5" column="1" colspan="3">
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QLabel" name="label_topic">
+       <property name="text">
+        <string>Topic</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="topic_input">
+       <property name="text">
+        <string>/waypoints</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_frame">
+       <property name="text">
+        <string>Frame</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="frame_input">
+       <property name="text">
+        <string>map</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="sixDcheckBox">
+       <property name="text">
+        <string>6D</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
    <item row="6" column="1" colspan="3">
-    <layout class="QHBoxLayout" name="text_interface">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="wp_height_label">
+       <property name="text">
+        <string>Default Height</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="height_spinbox">
+       <property name="minimum">
+        <double>-5.000000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QLabel" name="text_total">
        <property name="text">
-        <string>Total waypoints: </string>
+        <string>Total Waypoints: </string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QLabel" name="text_selected">
        <property name="text">
-        <string>Selected waypoint: </string>
+        <string>Selected wp: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="sel_wp_label">
+       <property name="text">
+        <string/>
        </property>
       </widget>
      </item>
     </layout>
    </item>
+   <item row="10" column="2" colspan="2">
+    <widget class="QPushButton" name="button_load">
+     <property name="text">
+      <string>Load Waypoints</string>
+     </property>
+    </widget>
+   </item>
    <item row="8" column="1" colspan="3">
-    <layout class="QHBoxLayout" name="position_interface">
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLabel" name="x_label">
        <property name="text">
@@ -55,7 +125,7 @@
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer1">
+      <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -88,7 +158,7 @@
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer2">
+      <spacer name="horizontalSpacer_2">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -121,7 +191,7 @@
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer3">
+      <spacer name="horizontalSpacer_3">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -155,84 +225,26 @@
      </item>
     </layout>
    </item>
-   <item row="5" column="1" colspan="3">
-    <layout class="QHBoxLayout" name="topic_interface">
-     <item>
-      <widget class="QLabel" name="topic_label">
-       <property name="text">
-        <string>Topic:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="topic_input">
-       <property name="text">
-        <string>/waypoints</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="frame_label">
-       <property name="text">
-        <string>Frame:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="frame_input">
-       <property name="text">
-        <string>map</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+   <item row="9" column="1">
+    <widget class="QPushButton" name="button_clear">
+     <property name="text">
+      <string>Clear All</string>
+     </property>
+    </widget>
    </item>
-   <item row="9" column="1" colspan="3">
-    <layout class="QGridLayout" name="button_interface">
-     <property name="leftMargin">
-      <number>5</number>
+   <item row="10" column="1">
+    <widget class="QPushButton" name="button_save">
+     <property name="text">
+      <string>Save Waypoints</string>
      </property>
-     <property name="rightMargin">
-      <number>5</number>
+    </widget>
+   </item>
+   <item row="9" column="2" colspan="2">
+    <widget class="QPushButton" name="button_publish">
+     <property name="text">
+      <string>Publish Waypoints</string>
      </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <property name="horizontalSpacing">
-      <number>25</number>
-     </property>
-     <property name="verticalSpacing">
-      <number>10</number>
-     </property>
-     <item row="2" column="0">
-      <widget class="QPushButton" name="button_load">
-       <property name="text">
-        <string>Load waypoints</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QPushButton" name="button_save">
-       <property name="text">
-        <string>Save waypoints</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QPushButton" name="button_publish">
-       <property name="text">
-        <string>Publish path</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="button_clear">
-       <property name="text">
-        <string>Clear All</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    </widget>
    </item>
   </layout>
  </widget>
