@@ -1,12 +1,8 @@
 /**
  * @file waypoint_widget.h
  * @author KoKoLates (the21515@gmail.com)
- * @brief 
  * @version 0.1
- * @date 2023-06-17
- * 
- * @copyright Copyright (c) 2023
- * 
+ * @date 2023-12-10
  */
 
 #ifndef RVIZ_PLUGIN_WAYPOINT_WIDGET_
@@ -48,15 +44,15 @@ namespace waypoint_plugin {
 } // namespace waypoint_plugin
 
 namespace waypoint_plugin {
-    constexpr char waypoint_name_prefix[] = "waypoint_#";
+    constexpr char waypoint_name_prefix[] = "point#";
     class WaypointWidget: public QWidget {
         friend class WaypointTool;
         Q_OBJECT
 
     public: 
-        WaypointWidget(rviz::DisplayContext* context, std::map<int, Ogre::SceneNode*>* map_ptr, 
-                       interactive_markers::InteractiveMarkerServer* server, int* unique_idx, 
-                       QWidget* parant = 0, WaypointTool* waypoint_tool = 0);
+        WaypointWidget(rviz::DisplayContext *context, std::map<int, Ogre::SceneNode*> *map_ptr, 
+                       interactive_markers::InteractiveMarkerServer *server, int *unique_idx, 
+                       QWidget *parant=0, WaypointTool *waypoint_tool=0);
         ~WaypointWidget();
 
         void enable();
@@ -64,8 +60,8 @@ namespace waypoint_plugin {
     
         // setter
         void setPose(const Ogre::Vector3&, const Ogre::Quaternion&);
-        void setConfig(QString, QString);
-        void setWaypointLabel(Ogre::Vector3);
+        void setConfig(QString topic, QString frame, float height);
+        void setWaypointLabel(Ogre::Vector3 position);
         void setWaypointCount(int size);
         void setSelectedMarkerName(std::string name);
 
@@ -73,29 +69,7 @@ namespace waypoint_plugin {
         void getPose(Ogre::Vector3&, Ogre::Quaternion&);
         QString getFrameId();
         QString getOutputTopic();
-
-    protected:
-        Ui::PluginWidget* ui_;
-        rviz::DisplayContext* context_;
-
-    private:
-        ros::NodeHandle handler_;
-        ros::Publisher path_publisher_;
-
-        WaypointTool* waypoint_tool_;
-        std::map<int, Ogre::SceneNode* >* map_ptr_;
-        Ogre::SceneManager* scene_manager_;
-        interactive_markers::InteractiveMarkerServer* server_;
-        int* unique_idx_;
-
-        // the current name of topic and frame
-        QString output_topic_;
-        QString frame_id_;
-
-        //mutex for changes of variables
-        boost::mutex frame_updates_mutex_;
-
-        std::string selected_marker_name_;
+        double getDefaultHeight();
 
         // save and load private function
         void saveBag(const std::string& filename);
@@ -106,6 +80,31 @@ namespace waypoint_plugin {
         // void loadYaml(const std::string& filename);
         // void loadJson(const std::string& filename);
 
+    protected:
+        Ui::PluginWidget *ui_;
+        rviz::DisplayContext *context_;
+
+    private:
+        ros::NodeHandle handler_;
+        ros::Publisher path_publisher_;
+
+        WaypointTool *waypoint_tool_;
+        std::map<int, Ogre::SceneNode*> *map_ptr_;
+        Ogre::SceneManager *scene_manager_;
+        interactive_markers::InteractiveMarkerServer *server_;
+
+        int* unique_idx_;
+        double default_height_;
+
+        // the current name of topic and frame
+        QString output_topic_;
+        QString frame_id_;
+
+        //mutex for changes of variables
+        boost::mutex frame_updates_mutex_;
+
+        std::string selected_marker_name_;
+
     private Q_SLOTS:
         void saveHandler();
         void loadHandler();
@@ -114,6 +113,7 @@ namespace waypoint_plugin {
         void frameChange();
         void topicChange();
         void poseChange(double value);
+        void heightChange(double height);
     };
 }
 

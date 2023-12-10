@@ -1,67 +1,63 @@
 /**
  * @file waypoint_widget.cpp
  * @author KoKoLates (the21515@gmail.com)
- * @brief 
  * @version 0.1
  * @date 2023-06-18
- * 
- * @copyright Copyright (c) 2023
- * 
  */
 
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
+
 #include <tf/tf.h>
 #include <QFileDialog>
-#include <boost/foreach.hpp>
 #include <rviz/display_context.h>
 #include <interactive_markers/interactive_marker_server.h>
-
-#include "waypoint_tool.h"
-
-#define foreach BOOST_FOREACH
 
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
 
+#include "waypoint_tool.h"
+
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 namespace waypoint_plugin {
 
-struct MissionKeywords {
-    inline static const std::string KPosition = "position";
-};
+WaypointWidget::WaypointWidget(rviz::DisplayContext *context, std::map<int, Ogre::SceneNode*> *map_ptr,
+                               interactive_markers::InteractiveMarkerServer *server, int *unique_idx,
+                               QWidget *parent, WaypointTool *waypoint_tool): QWidget(parent) 
+{
+    context_ = context;
+    ui_ = new Ui::PluginWidget();
+    map_ptr_ = map_ptr;
+    unique_idx_ = unique_idx;
+    server_ = server;
+    frame_id_ = "map";
+    waypoint_tool_ = waypoint_tool;
+    default_height_ = 0.0;
+    selected_marker_name_ = std::string(waypoint_name_prefix) + "1";
 
-WaypointWidget::WaypointWidget (rviz::DisplayContext* context, std::map<int, Ogre::SceneNode* >* map_ptr,
-                                interactive_markers::InteractiveMarkerServer* server, int* unique_idx, 
-                                QWidget* parent, WaypointTool* waypoint_tool)
-    : QWidget(parent)
-    , context_(context) 
-    , ui_(new Ui::PluginWidget()) 
-    , map_ptr_(map_ptr_)
-    , unique_idx_(unique_idx) 
-    , server_(server)
-    , frame_id_("map") 
-    , waypoint_tool_(waypoint_tool) 
-    , selected_marker_name_(std::string(waypoint_name_prefix) + "1") 
-{        
     scene_manager_ = context_->getSceneManager();
     ui_->setupUi(this);
-    path_publisher_ = handler_.advertise<nav_msgs::Path>("waypath", 1);
+    path_publisher_ = handler_.advertise<nav_msgs::Path>("waypoints", 1);
 
     // Qt signaks and slots Managements
-    connect(ui_->button_save, SIGNAL(clicked()), this, SLOT(saveHandler()));
-    connect(ui_->button_load, SIGNAL(clicked()), this, SLOT(loadHandler()));
-    connect(ui_->button_clear, SIGNAL(clicked()), this, SLOT(clearHandler()));
+    connect(ui_->button_save,    SIGNAL(clicked()), this, SLOT(saveHandler()));
+    connect(ui_->button_load,    SIGNAL(clicked()), this, SLOT(loadHandler()));
+    connect(ui_->button_clear,   SIGNAL(clicked()), this, SLOT(clearHandler()));
     connect(ui_->button_publish, SIGNAL(clicked()), this, SLOT(publishHandler()));
 
     // Position spin box interface
-    connect(ui_->x_spinbox, SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
-    connect(ui_->y_spinbox, SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
-    connect(ui_->z_spinbox, SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
-    connect(ui_->yaw_spinbox, SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
+    connect(ui_->x_spinbox,      SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
+    connect(ui_->y_spinbox,      SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
+    connect(ui_->z_spinbox,      SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
+    connect(ui_->yaw_spinbox,    SIGNAL(valueChanged(double)), this, SLOT(poseChange(double)));
+    connect(ui_->height_spinbox, SIGNAL(valueChanged(double)), this, SLOT(heightChange(double)));
     
     // topic / frame input interface
-    connect(ui_->topic_input, SIGNAL(editingFinished()), this, SLOT(topicChange()));
-    connect(ui_->frame_input, SIGNAL(editingFinished()), this, SLOT(frameChange()));
+    connect(ui_->topic_input,    SIGNAL(editingFinished()), this, SLOT(topicChange()));
+    connect(ui_->frame_input,    SIGNAL(editingFinished()), this, SLOT(frameChange()));
+
 }
 
 WaypointWidget::~WaypointWidget() {
@@ -82,7 +78,7 @@ void WaypointWidget::saveHandler() {
     // saving the waypoint that have been setup
     QString filename = QFileDialog::getSaveFileName(
         0, tr("Waypoints Save"), "waypoints", 
-        tr("Save Files (*.bag *.yaml *.json)")
+        tr("Save Files (*.bag)")
     );
     if (filename.isEmpty()) {
         ROS_ERROR("No saving file selected");
@@ -104,7 +100,7 @@ void WaypointWidget::saveHandler() {
 void WaypointWidget::loadHandler() {
     const QString filename = QFileDialog::getOpenFileName(
         0, tr("Waypoint load"), "~/", 
-        tr("Load Files (*.bag *.yaml *.json)")
+        tr("Load Files (*.bag)")
     );
     if (filename.isEmpty()) {
         ROS_ERROR("No loading file selected");
@@ -209,38 +205,81 @@ void WaypointWidget::frameChange() {
     QString new_frame = ui_->frame_input->text();
 
     // Only take action if the frame has changed.
-    if ((new_frame != frame_id_)  && (new_frame != "")) {
+    if ((new_frame != frame_id_) && (new_frame != "")) {
         frame_id_ = new_frame;
         ROS_INFO("new frame: %s", frame_id_.toStdString().c_str());
 
         // update the frames for all interactive markers
         std::map<int, Ogre::SceneNode *>::iterator node_itr;
         for (node_itr = map_ptr_->begin(); node_itr != map_ptr_->end(); node_itr++) {
-        std::stringstream waypoint_name;
-        waypoint_name << "waypoint" << node_itr->first;
-        std::string waypoint_name_str(waypoint_name.str());
+            std::stringstream waypoint_name;
+            waypoint_name << "waypoint" << node_itr->first;
+            std::string waypoint_name_str(waypoint_name.str());
 
-        visualization_msgs::InteractiveMarker int_marker;
-        if(server_->get(waypoint_name_str, int_marker)) {
-            int_marker.header.frame_id = new_frame.toStdString();
-            server_->setPose(waypoint_name_str, int_marker.pose, int_marker.header);
+            visualization_msgs::InteractiveMarker int_marker;
+            if(server_->get(waypoint_name_str, int_marker)) {
+                int_marker.header.frame_id = new_frame.toStdString();
+                server_->setPose(waypoint_name_str, int_marker.pose, int_marker.header);
+            }
         }
+        server_->applyChanges();
     }
-    server_->applyChanges();
-  }
 }
 
 void WaypointWidget::topicChange() {
     QString new_topic = ui_->topic_input->text();
 
-  // Only take action if the name has changed.
-  if(new_topic != output_topic_) {
-    path_publisher_.shutdown();
-    output_topic_ = new_topic;
-    if((output_topic_ != "") && (output_topic_ != "/")) {
-      path_publisher_ = handler_.advertise<nav_msgs::Path>(output_topic_.toStdString(), 1);
+    // Only take action if the name has changed.
+    if(new_topic != output_topic_) {
+        path_publisher_.shutdown();
+        output_topic_ = new_topic;
+        if((output_topic_ != "") && (output_topic_ != "/")) {
+            path_publisher_ = handler_.advertise<nav_msgs::Path>(output_topic_.toStdString(), 1);
+        }
     }
-  }
+}
+
+void WaypointWidget::heightChange(double value) {
+    auto sn_entry = map_ptr_->end();
+    try {
+        const int selected_marker_idx = std::stoi(
+            selected_marker_name_.substr((strlen((waypoint_name_prefix))))
+        );
+        sn_entry = map_ptr_->find(selected_marker_idx);
+    } catch(const std::logic_error &error) {
+        ROS_ERROR_STREAM(error.what());
+        return;
+    }
+
+    if (sn_entry == map_ptr_->end()) {
+        ROS_ERROR("%s not found in map", selected_marker_name_.c_str());
+    } else {
+        Ogre::Vector3 position;
+        Ogre::Quaternion quternion;
+        getPose(position, quternion);
+
+        sn_entry->second->setPosition(position);
+        sn_entry->second->setOrientation(quternion);
+
+        std::stringstream wp_name;
+        wp_name << waypoint_name_prefix << sn_entry->first;
+        std::string wp_name_str(wp_name.str());
+
+        visualization_msgs::InteractiveMarker int_marker;
+        if (server_->get(wp_name_str, int_marker)) {
+            int_marker.pose.position.x = position.x;
+            int_marker.pose.position.y = position.y;
+            int_marker.pose.position.z = position.z;
+
+            int_marker.pose.orientation.x = quternion.x;
+            int_marker.pose.orientation.y = quternion.y;
+            int_marker.pose.orientation.z = quternion.z;
+            int_marker.pose.orientation.w = quternion.w;
+
+            server_->setPose(wp_name_str, int_marker.pose, int_marker.header);
+        }
+        server_->applyChanges();
+    }
 }
 
 void WaypointWidget::saveBag(const std::string& filename) {
@@ -294,26 +333,26 @@ void WaypointWidget::loadBag(const std::string& filename) {
     rosbag::View view(bag, rosbag::TopicQuery(topics));
 
     BOOST_FOREACH (rosbag::MessageInstance const m, view) {
-    nav_msgs::Path::ConstPtr p = m.instantiate<nav_msgs::Path>();
-    if (p == nullptr) continue;
-    ROS_INFO("n waypoints %zu", p->poses.size());
+        nav_msgs::Path::ConstPtr p = m.instantiate<nav_msgs::Path>();
+        if (p == nullptr) continue;
+        ROS_INFO("n waypoints %zu", p->poses.size());
 
-    for (size_t i = 0; i < p->poses.size(); i++) {
-        geometry_msgs::PoseStamped pos = p->poses[i];
-        Ogre::Vector3 position;
-        position.x = pos.pose.position.x;
-        position.y = pos.pose.position.y;
-        position.z = pos.pose.position.z;
+        for (size_t i = 0; i < p->poses.size(); i++) {
+            geometry_msgs::PoseStamped pos = p->poses[i];
+            Ogre::Vector3 position;
+            position.x = pos.pose.position.x;
+            position.y = pos.pose.position.y;
+            position.z = pos.pose.position.z;
 
-        Ogre::Quaternion quaternion;
-        quaternion.x = pos.pose.orientation.x;
-        quaternion.y = pos.pose.orientation.y;
-        quaternion.z = pos.pose.orientation.z;
-        quaternion.w = pos.pose.orientation.w;
+            Ogre::Quaternion quaternion;
+            quaternion.x = pos.pose.orientation.x;
+            quaternion.y = pos.pose.orientation.y;
+            quaternion.z = pos.pose.orientation.z;
+            quaternion.w = pos.pose.orientation.w;
 
-        waypoint_tool_->makeItem(position, quaternion);
+            waypoint_tool_->makeItem(position, quaternion);
+        }
     }
-  }
 }
 
 void WaypointWidget::setPose(const Ogre::Vector3& position, const Ogre::Quaternion& quaternion) {
@@ -335,19 +374,25 @@ void WaypointWidget::setPose(const Ogre::Vector3& position, const Ogre::Quaterni
     ui_->yaw_spinbox->blockSignals(false);
 }
 
-void WaypointWidget::setConfig(QString topic, QString frame) {
-    boost::mutex::scoped_lock lock(frame_updates_mutex_);
-    ui_->topic_input->blockSignals(true);
-    ui_->frame_input->blockSignals(true);
+void WaypointWidget::setConfig(QString topic, QString frame, float height) {
+    {
+        boost::mutex::scoped_lock lock(frame_updates_mutex_);
+        ui_->topic_input->blockSignals(true);
+        ui_->frame_input->blockSignals(true);
+        ui_->height_spinbox->blockSignals(true);
 
-    ui_->topic_input->setText(topic);
-    ui_->frame_input->setText(frame);
+        ui_->topic_input->setText(topic);
+        ui_->frame_input->setText(frame);
+        ui_->height_spinbox->setValue(height);
 
-    ui_->topic_input->blockSignals(false);
-    ui_->frame_input->blockSignals(false);
+        ui_->topic_input->blockSignals(false);
+        ui_->frame_input->blockSignals(false);
+        ui_->height_spinbox->blockSignals(false);
+    }
 
     topicChange();
     frameChange();
+    heightChange(height);
 }
 
 void WaypointWidget::setWaypointLabel(Ogre::Vector3 position) {
@@ -383,6 +428,11 @@ void WaypointWidget::getPose(Ogre::Vector3& position, Ogre::Quaternion& quaterni
     quaternion.y = qt.y();
     quaternion.z = qt.z();
     quaternion.w = qt.w();
+}
+
+double WaypointWidget::getDefaultHeight() {
+    boost::mutex::scoped_lock lock(frame_updates_mutex_);
+    return default_height_;
 }
 
 QString WaypointWidget::getFrameId() {

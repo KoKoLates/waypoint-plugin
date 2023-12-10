@@ -1,12 +1,8 @@
 /**
  * @file waypoint_tool.h
  * @author KoKoLates (the21515@gmail.com)
- * @brief 
  * @version 0.1
  * @date 2023-06-19
- * 
- * @copyright Copyright (c) 2023
- * 
  */
 
 #pragma once
@@ -20,9 +16,9 @@
 
 namespace rviz {
     class VectorProperty;
-    class PanelDockWidget;
     class ViewportMouseEvent;
     class VisualizationManager;
+    class PanelDockWidget;
 } // namespace rviz
 
 namespace Ogre {
@@ -35,32 +31,32 @@ namespace waypoint_plugin {
 
 class WaypointTool: public rviz::Tool {
     Q_OBJECT
-    public:
+public:
     WaypointTool();
     ~WaypointTool();
 
     // virtual function
     virtual void activate();
     virtual void deactivate();
-    virtual void initialize();
-    virtual int processMouseEvent(rviz::ViewportMouseEvent&);
+    virtual void onInitialize();
+    virtual int processMouseEvent(rviz::ViewportMouseEvent& event);
 
     void makeItem(const Ogre::Vector3&, const Ogre::Quaternion&);
 
-    virtual void load(const rviz::Config&);
-    virtual void save(rviz::Config) const;
+    virtual void load(const rviz::Config& config);
+    virtual void save(rviz::Config config) const;
 
-    private:
+private:
     void getMarkerPose();
     void clearAllMarker();
     void processFeedBack(const visualization_msgs::InteractiveMarkerFeedbackConstPtr&);
 
-    Ogre::SceneNode* move_axis_node_;
+    Ogre::SceneNode *move_axis_node_;
     std::string axis_resource_;
 
     // waypoint plugin Qt widget
-    WaypointWidget* widget_;
-    rviz::PanelDockWidget* widget_dock_;
+    WaypointWidget *widget_;
+    rviz::PanelDockWidget *widget_dock_;
 
     // interactive marker
     interactive_markers::InteractiveMarkerServer server_;

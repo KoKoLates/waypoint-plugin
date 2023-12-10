@@ -1,12 +1,8 @@
 /**
  * @file waypoint_tool.cpp
  * @author KoKoLates (the21515@gmail.com)
- * @brief 
  * @version 0.1
  * @date 2023-06-20
- * 
- * @copyright Copyright (c) 2023
- * 
  */
 
 #include "waypoint_tool.h"
@@ -15,6 +11,7 @@
 #include <rviz/geometry.h>
 #include <rviz/mesh_loader.h>
 #include <rviz/validate_floats.h>
+#include <rviz/panel_dock_widget.h>
 #include <rviz/viewport_mouse_event.h>
 #include <rviz/visualization_manager.h>
 #include <rviz/window_manager_interface.h>
@@ -28,7 +25,8 @@
 namespace waypoint_plugin {
 
 WaypointTool::WaypointTool(): move_axis_node_(NULL), widget_dock_(NULL), 
-    widget_(NULL), server_("waypoint_plugin", "", false), unique_idx_(0) {
+    widget_(NULL), server_("waypoint_plugin", "", false), unique_idx_(0)
+{
     shortcut_key_ = '1';
 }
 
@@ -41,8 +39,8 @@ WaypointTool::~WaypointTool() {
     delete widget_dock_;
 }
 
-void WaypointTool::initialize() {
-    axis_resource_ = "package://waypoint-plugin/media/axis.dae";
+void WaypointTool::onInitialize() {
+    axis_resource_ = "package://waypoint_plugin/media/axis.dae";
 
     if (rviz::loadMeshFromResource(axis_resource_).isNull()) {
         ROS_ERROR("Waypoint Tool: failed to load model resource '%s'.", axis_resource_.c_str());
@@ -84,7 +82,7 @@ int WaypointTool::processMouseEvent(rviz::ViewportMouseEvent& event) {
         return Render;
     }
 
-    double height = 0; // default height
+    double height = widget_->getDefaultHeight();
     Ogre::Vector3 intersection;
     Ogre::Quaternion quternion;
     Ogre::Plane ground_plane(Ogre::Vector3::UNIT_Z, height);
@@ -137,7 +135,6 @@ int WaypointTool::processMouseEvent(rviz::ViewportMouseEvent& event) {
 
 void WaypointTool::makeItem(const Ogre::Vector3& position, const Ogre::Quaternion& quaternion) {
     unique_idx_++;
-
     std::stringstream waypoint_name;
     waypoint_name << waypoint_name_prefix << unique_idx_;
     std::string str_name(waypoint_name.str());
@@ -148,8 +145,8 @@ void WaypointTool::makeItem(const Ogre::Vector3& position, const Ogre::Quaternio
     }
 
     // create a new scene node and save it in a std::map
-    Ogre::SceneNode* node_ptr = scene_manager_->getRootSceneNode() -> createChildSceneNode();
-    Ogre::Entity* entity = scene_manager_->createEntity(axis_resource_);
+    Ogre::SceneNode *node_ptr = scene_manager_->getRootSceneNode()->createChildSceneNode();
+    Ogre::Entity *entity = scene_manager_->createEntity(axis_resource_);
     node_ptr->attachObject(entity);
     node_ptr->setVisible(true);
     node_ptr->setPosition(position);
@@ -158,14 +155,11 @@ void WaypointTool::makeItem(const Ogre::Vector3& position, const Ogre::Quaternio
     str2nodeptr::iterator node_entry = node_map_.find(unique_idx_);
     if (node_entry == node_map_.end()) {
         node_map_.insert(std::make_pair(unique_idx_, node_ptr));
-    }
-    else {
+    } else {
         ROS_WARN("%s already in map", str_name.c_str());
         return;
     }
-
-    int waypoint_num = node_map_.size();
-    widget_->setWaypointCount(waypoint_num);
+    widget_->setWaypointCount(node_map_.size());
 
     geometry_msgs::PoseStamped pose;
     pose.pose.position.x = position.x;
@@ -180,18 +174,18 @@ void WaypointTool::makeItem(const Ogre::Vector3& position, const Ogre::Quaternio
     int_marker.header.stamp = ros::Time::now();
     int_marker.header.frame_id = widget_->getFrameId().toStdString();
     int_marker.pose = pose.pose;
-    int_marker.scale = 2;
+    int_marker.scale = 1;
     int_marker.name = str_name;
 
     visualization_msgs::Marker marker;
     marker.type = visualization_msgs::Marker::CYLINDER;
-    marker.scale.x = 2.0;
-    marker.scale.y = 2.0;
-    marker.scale.z = 2.0;
-    marker.color.r = 2.0;
-    marker.color.g = 2.0;
-    marker.color.b = 2.0;
-    marker.color.a = 2.0;
+    marker.scale.x = 0.5;
+    marker.scale.y = 0.5;
+    marker.scale.z = 0.1;
+    marker.color.r = 0.0;
+    marker.color.g = 0.0;
+    marker.color.b = 0.0;
+    marker.color.a = 0.0;
 
     visualization_msgs::InteractiveMarkerControl c_control;
     c_control.always_visible = true;
@@ -205,6 +199,7 @@ void WaypointTool::makeItem(const Ogre::Vector3& position, const Ogre::Quaternio
     control.orientation.z = 0;
     control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
     int_marker.controls.push_back(control);
+    
     control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
     int_marker.controls.push_back(control);
 
@@ -343,19 +338,22 @@ void WaypointTool::save(rviz::Config config) const {
 
     waypoint_config.mapSetValue("topic", widget_->getOutputTopic());
     waypoint_config.mapSetValue("frame_id", widget_->getFrameId());
+    waypoint_config.mapSetValue("default_height", widget_->getDefaultHeight());
 }
 
-void WaypointTool::load(const rviz::Config& config) {
+void WaypointTool::load(const rviz::Config &config) {
     rviz::Config waypoint_config = config.mapGetChild("WaypointTool");
     QString topic, frame;
+    float height;
     if (!waypoint_config.mapGetString("topic", &topic)) {
         topic = "/waypoints";
     }
     if (!waypoint_config.mapGetString("frame_id", &frame)) {
         frame = "map";
     }
+    waypoint_config.mapGetFloat("default_height", &height);
 
-    widget_->setConfig(topic, frame);
+    widget_->setConfig(topic, frame, height);
 }
 
 } // namespace end
