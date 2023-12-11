@@ -1,6 +1,6 @@
 # waypoint plugin
 ## 1. Overview
-An interactive waypoint plugin based on the plugin [release](https://github.com/KumarRobotics/waypoint_navigation_plugin/tree/master). This plugin offers a user-friendly interface to define and manage waypoints efficiently. This integration empowers users to easily interact with the robotic system, establishing a seamless workflow for waypoint setup and management.
+An interactive waypoint plugin is the modification of the [release](https://github.com/KumarRobotics/waypoint_navigation_plugin/tree/master). This plugin offers a user-friendly interface to define and manage waypoints efficiently. This integration empowers users to easily interact with the robotic system, establishing a seamless workflow for waypoint setup and management.
 
 ### Build
 * `$ cd catkin_ws/src`
@@ -20,7 +20,7 @@ To utilize the plugin in RViz, start by adding it from the toolbar. Once added, 
 </div>
 <br>
 
-After configuring the waypoints, simply click the 'publish' button, and the /waypoints topic will be published. By subscribing to this topic from another controller node, the navigation functionality can be implemented seamlessly. This process ensures that the waypoints are effectively communicated between the components, facilitating the smooth execution of navigation tasks.
+After configuring the waypoints, simply click the `Publish Waypoints` button, and the `/waypoints` topic will be published. By subscribing to this topic from another controller node, the navigation functionality can be implemented seamlessly. This process ensures that the waypoints are effectively communicated between the components, facilitating the smooth execution of navigation tasks.
 <br>
 <div align="center">
   <img src="./image/image2.png" alt="image02" width="800">
